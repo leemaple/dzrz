@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>安全虚拟桌面配置核查与整改管理系统 V1.0</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <div id="login-screen" class="login-shell">
+    <section class="login-brand">
+      <div class="eyebrow">DESKGUARD / CONFIGURATION ASSURANCE</div>
+      <h1>安全虚拟桌面<br>配置核查与整改管理系统</h1>
+      <p class="version">V1.0 · 本地证据工作台</p>
+      <p>将资产配置、规则基线、核查结果与整改复测<br>纳入可追溯的工作流程。</p>
+      <div class="login-flow">
+        <span>配置登记</span><b>→</b><span>规则核查</span><b>→</b><span>整改复测</span>
+      </div>
+      <p class="muted">本软件不连接或扫描目标主机，不替代安全认证。</p>
+    </section>
+    <section class="login-panel">
+      <h2>登录工作台</h2>
+      <p>使用本机初始化的管理员账号。</p>
+      <form id="login-form">
+        <label for="username">用户名</label>
+        <input id="username" autocomplete="username" required minlength="3" maxlength="32">
+        <label for="password">口令</label>
+        <input id="password" type="password" autocomplete="current-password" required maxlength="128">
+        <button type="submit" class="primary" id="login-button">登录</button>
+      </form>
+      <div id="login-error" class="error" role="alert" hidden></div>
+      <div class="tip">首次使用请在终端执行：<code>python -m deskguard init</code></div>
+    </section>
+  </div>
+  <div id="app-shell" class="app-shell" hidden>
+    <aside class="sidebar">
+      <div class="brand-mark">DG<span>DeskGuard</span></div>
+      <p class="sidebar-subtitle">虚拟桌面配置核查<br>与整改管理 · V1.0</p>
+      <nav aria-label="主导航">
+        <button data-view="overview" class="nav-button">01　工作概览</button>
+        <button data-view="spaces" class="nav-button">02　管理域</button>
+        <button data-view="assets" class="nav-button">03　资产与配置</button>
+        <button data-view="baselines" class="nav-button">04　规则基线</button>
+        <button data-view="jobs" class="nav-button">05　核查任务</button>
+        <button data-view="tickets" class="nav-button">06　整改工单</button>
+        <button data-view="compare" class="nav-button">07　复测对比</button>
+        <button data-view="audit" class="nav-button">08　操作审计</button>
+        <button data-view="system" class="nav-button">09　系统维护</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <span class="online-dot"></span> 本地模式 / 无远程探测
+        <p>仅核查用户填报配置</p>
+      </div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar">
+        <div><strong>安全虚拟桌面配置核查与整改管理系统</strong><small>V1.0</small></div>
+        <div class="account"><span id="current-user"></span><button id="logout">退出</button></div>
+      </header>
+      <main id="content" tabindex="-1" aria-live="polite"></main>
+      <footer>DeskGuard · 配置证据核查工具 · 不代表法定合规结论</footer>
+    </div>
+  </div>
+  <dialog id="editor">
+    <div class="dialog-head">
+      <h2 id="dialog-title"></h2>
+      <button id="dialog-close" aria-label="关闭">×</button>
+    </div>
+    <div id="dialog-body"></div>
+    <div id="dialog-error" class="error" role="alert" hidden></div>
+  </dialog>
+  <div id="toast" role="status" hidden></div>
+</body>
+</html>
