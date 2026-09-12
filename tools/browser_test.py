@@ -267,6 +267,8 @@ def main():
                 page.locator("#action-note").fill("验证旧任务不能作为修复通过的依据。")
                 page.locator("#verify-ticket").click()
                 expect(page.locator("#dialog-error")).to_be_visible()
+                page.locator("#dialog-error").scroll_into_view_if_needed()
+                expect(page.locator("#dialog-error")).to_be_in_viewport()
                 step("确认旧证据不能关闭工单", "选择原始任务并尝试验证关闭。", "系统明确拒绝；工单没有关闭。")
                 close()
 
