@@ -2,14 +2,15 @@ name: Verify DeskGuard
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
 defaults:
   run:
     shell: bash
 concurrency:
-  group: deskguard-main
+  group: deskguard-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   verify:
@@ -20,37 +21,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      - name: Materialize exact reviewed source on first run
-        if: hashFiles('bootstrap/part-1.b64') != ''
-        run: |
-          python - <<'PY'
-          from pathlib import Path, PurePosixPath
-          import base64, hashlib, json, lzma
-          text = ''.join(Path(f'bootstrap/part-{i}.b64').read_text().strip() for i in range(1,6))
-          packed = base64.b64decode(text, validate=True)
-          assert len(packed) == 46140
-          assert hashlib.sha256(packed).hexdigest() == 'e56a816b201a85cb67f3b48be729fa3967024f70c521cc6d5f0261cc44568c84'
-          files = json.loads(lzma.decompress(packed))
-          assert len(files) == 29
-          roots = {'deskguard', 'tests', 'tools'}
-          names = {'README.md', 'THIRD_PARTY_NOTICES.md', 'requirements.txt', 'requirements-dev.txt', 'run.sh', 'run.bat', '.gitignore'}
-          for name, content in files.items():
-              p = PurePosixPath(name)
-              assert isinstance(content, str)
-              assert not p.is_absolute() and '..' not in p.parts and '\\' not in name
-              assert p.parts[0] in roots or name in names
-          for name, content in files.items():
-              p = Path(name)
-              p.parent.mkdir(parents=True, exist_ok=True)
-              p.write_text(content, encoding='utf-8')
-          Path('run.sh').chmod(0o755)
-          PY
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add deskguard tests tools README.md THIRD_PARTY_NOTICES.md requirements.txt requirements-dev.txt run.sh run.bat .gitignore
-          git rm bootstrap/part-*.b64
-          git commit -m 'feat: implement desktop configuration checks and verified remediation workflow'
-          git push origin HEAD:main
       - name: Install pinned application and test dependencies
         run: |
           python -m pip install -r requirements-dev.txt
@@ -60,12 +30,11 @@ jobs:
       - name: Record actual source and environment
         run: |
           mkdir -p .evidence
-          python tools/source_manifest.py --output .evidence
+          python tools/source_manifest.py
           python --version > .evidence/environment.txt
           uname -a >> .evidence/environment.txt
           python -m pip freeze >> .evidence/environment.txt
           python - <<'PY'
-          from pathlib import Path
           import subprocess, zipfile
           files = subprocess.check_output(['git', 'ls-files', '-z']).decode().strip('\0').split('\0')
           with zipfile.ZipFile('.evidence/tested-source.zip', 'w', zipfile.ZIP_DEFLATED) as z:
