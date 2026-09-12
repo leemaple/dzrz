@@ -54,8 +54,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def browser_security(request, call_next):
         origin = request.headers.get("origin")
         if request.method not in {"GET", "HEAD", "OPTIONS"} and origin:
-            expected, actual = urlsplit(str(request.base_url)), urlsplit(origin)
-            if (expected.scheme, expected.netloc) != (actual.scheme, actual.netloc):
+            try:
+                expected, actual = urlsplit(str(request.base_url)), urlsplit(origin)
+                valid_origin = (
+                    (expected.scheme, expected.netloc) == (actual.scheme, actual.netloc)
+                    and not actual.path and not actual.query and not actual.fragment
+                )
+            except ValueError:
+                valid_origin = False
+            if not valid_origin:
                 return JSONResponse({"detail": "拒绝跨站写入"}, status_code=403)
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"

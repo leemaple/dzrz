@@ -29,7 +29,14 @@ def parse_json(text: str) -> list[dict]:
 
 
 def parse_csv(text: str) -> list[dict]:
-    reader = csv.DictReader(io.StringIO(text.lstrip("\ufeff"), newline=""))
+    try:
+        return _parse_csv_rows(text)
+    except csv.Error as exc:
+        raise ValueError("CSV格式错误或字段过长，请按模板检查引号及字段长度") from exc
+
+
+def _parse_csv_rows(text: str) -> list[dict]:
+    reader = csv.DictReader(io.StringIO(text.lstrip("\ufeff"), newline=""), strict=True)
     if reader.fieldnames != COLUMNS:
         raise ValueError("CSV表头及顺序必须与下载模板一致")
     records = []

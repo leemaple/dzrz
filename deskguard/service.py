@@ -363,6 +363,13 @@ class Service:
             self.active_space(conn, row["space_id"])
             if row["status"] != "resolved":
                 raise DomainError("工单必须先处理并提交为待验证")
+            # Check under the same write transaction as closure: a later asset
+            # edit must not be hidden by a superseded passing snapshot.
+            current = require(conn.execute(
+                "SELECT revision FROM assets WHERE id=?", (row["asset_id"],)
+            ).fetchone(), "工单资产不存在")
+            if current["revision"] != right["asset_revision"]:
+                raise DomainError("复测证据已过期，请使用该资产当前版本重新核查")
             conn.execute(
                 "UPDATE tickets SET status='closed',verify_job_id=?,note=?,updated_at=? WHERE id=?",
                 (new_job_id, note, utc_now(), key),

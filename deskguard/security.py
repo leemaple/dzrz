@@ -166,7 +166,7 @@ class Auth:
 
     @staticmethod
     def check_csrf(identity: Identity, provided: str | None) -> None:
-        if not provided or not hmac.compare_digest(identity.csrf, provided):
+        if not provided or not provided.isascii() or not hmac.compare_digest(identity.csrf, provided):
             raise AccessError("请求校验失败，请刷新页面后重试", 403)
 
     def logout(self, identity: Identity) -> None:
@@ -193,11 +193,13 @@ class Auth:
             raise ValueError("新口令不能与原口令相同")
         encoded = hash_password(new)
         with self.db.transaction() as conn:
-            conn.execute(
+            changed = conn.execute(
                 "UPDATE users SET password_hash=?,updated_at=? "
-                "WHERE username=?",
-                (encoded, utc_now(), identity.username),
-            )
+                "WHERE username=? AND password_hash=?",
+                (encoded, utc_now(), identity.username, row["password_hash"]),
+            ).rowcount
+            if changed != 1:
+                raise AccessError("口令已被其他请求修改，请重新登录", 403)
             conn.execute(
                 "DELETE FROM sessions WHERE username=?", (identity.username,)
             )
