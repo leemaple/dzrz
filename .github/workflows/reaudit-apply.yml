@@ -1,0 +1,30 @@
+name: Apply bounded reaudit corrections
+on:
+  push:
+    paths: ['tools/reaudit_update.py']
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Apply exact reviewed corrections and verify before committing
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/reaudit_update.py
+          python -m pip install -r requirements-dev.txt
+          python -m compileall -q deskguard tests tools
+          node --check deskguard/static/app.js
+          python -m pytest -q
+          git rm tools/reaudit_update.py .github/workflows/reaudit-apply.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add deskguard
+          git commit -m 'fix: bind closure to current revision and harden input and password races'
+          git push origin HEAD:main
